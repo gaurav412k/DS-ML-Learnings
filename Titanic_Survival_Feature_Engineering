@@ -1,0 +1,1749 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "6d9b4cec",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:35.870783Z",
+     "iopub.status.busy": "2024-06-07T13:29:35.870396Z",
+     "iopub.status.idle": "2024-06-07T13:29:36.743641Z",
+     "shell.execute_reply": "2024-06-07T13:29:36.742433Z"
+    },
+    "papermill": {
+     "duration": 0.884144,
+     "end_time": "2024-06-07T13:29:36.746338",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:35.862194",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/titanic/train.csv\n",
+      "/kaggle/input/titanic/test.csv\n",
+      "/kaggle/input/titanic/gender_submission.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "ca64ceda",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:36.761507Z",
+     "iopub.status.busy": "2024-06-07T13:29:36.760982Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.033065Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.032022Z"
+    },
+    "papermill": {
+     "duration": 1.282575,
+     "end_time": "2024-06-07T13:29:38.035632",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:36.753057",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import matplotlib.pyplot as plt\n",
+    "import seaborn as sns\n",
+    "import pandas as pd"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "28cdaade",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.050243Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.049846Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.079886Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.078837Z"
+    },
+    "papermill": {
+     "duration": 0.04044,
+     "end_time": "2024-06-07T13:29:38.082597",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.042157",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "train = pd.read_csv(\"/kaggle/input/titanic/train.csv\")\n",
+    "test = pd.read_csv(\"/kaggle/input/titanic/test.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "2d30605a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.097293Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.096915Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.124306Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.123290Z"
+    },
+    "papermill": {
+     "duration": 0.037616,
+     "end_time": "2024-06-07T13:29:38.126875",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.089259",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PassengerId</th>\n",
+       "      <th>Survived</th>\n",
+       "      <th>Pclass</th>\n",
+       "      <th>Name</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>SibSp</th>\n",
+       "      <th>Parch</th>\n",
+       "      <th>Ticket</th>\n",
+       "      <th>Fare</th>\n",
+       "      <th>Cabin</th>\n",
+       "      <th>Embarked</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Braund, Mr. Owen Harris</td>\n",
+       "      <td>male</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>A/5 21171</td>\n",
+       "      <td>7.2500</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>S</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Cumings, Mrs. John Bradley (Florence Briggs Th...</td>\n",
+       "      <td>female</td>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>PC 17599</td>\n",
+       "      <td>71.2833</td>\n",
+       "      <td>C85</td>\n",
+       "      <td>C</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Heikkinen, Miss. Laina</td>\n",
+       "      <td>female</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>STON/O2. 3101282</td>\n",
+       "      <td>7.9250</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>S</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Futrelle, Mrs. Jacques Heath (Lily May Peel)</td>\n",
+       "      <td>female</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>113803</td>\n",
+       "      <td>53.1000</td>\n",
+       "      <td>C123</td>\n",
+       "      <td>S</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Allen, Mr. William Henry</td>\n",
+       "      <td>male</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>373450</td>\n",
+       "      <td>8.0500</td>\n",
+       "      <td>NaN</td>\n",
+       "      <td>S</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   PassengerId  Survived  Pclass  \\\n",
+       "0            1         0       3   \n",
+       "1            2         1       1   \n",
+       "2            3         1       3   \n",
+       "3            4         1       1   \n",
+       "4            5         0       3   \n",
+       "\n",
+       "                                                Name     Sex   Age  SibSp  \\\n",
+       "0                            Braund, Mr. Owen Harris    male  22.0      1   \n",
+       "1  Cumings, Mrs. John Bradley (Florence Briggs Th...  female  38.0      1   \n",
+       "2                             Heikkinen, Miss. Laina  female  26.0      0   \n",
+       "3       Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  35.0      1   \n",
+       "4                           Allen, Mr. William Henry    male  35.0      0   \n",
+       "\n",
+       "   Parch            Ticket     Fare Cabin Embarked  \n",
+       "0      0         A/5 21171   7.2500   NaN        S  \n",
+       "1      0          PC 17599  71.2833   C85        C  \n",
+       "2      0  STON/O2. 3101282   7.9250   NaN        S  \n",
+       "3      0            113803  53.1000  C123        S  \n",
+       "4      0            373450   8.0500   NaN        S  "
+      ]
+     },
+     "execution_count": 4,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "2e350114",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.141878Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.141475Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.156842Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.155948Z"
+    },
+    "papermill": {
+     "duration": 0.025724,
+     "end_time": "2024-06-07T13:29:38.159357",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.133633",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "train.isna().sum()     # Cabin col have more number of missing values so we will drop this columuns\n",
+    "train.drop([\"Cabin\",\"Fare\",\"Ticket\"], axis= 1, inplace=True)\n",
+    "test.drop([\"Cabin\",\"Fare\",\"Ticket\"], axis= 1, inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "8a1cb674",
+   "metadata": {
+    "papermill": {
+     "duration": 0.0065,
+     "end_time": "2024-06-07T13:29:38.172544",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.166044",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# Data Visualization"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "b52b6b93",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.187558Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.187156Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.499275Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.498106Z"
+    },
+    "papermill": {
+     "duration": 0.322526,
+     "end_time": "2024-06-07T13:29:38.501660",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.179134",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Survival percentage of Female :  74.20382165605095\n",
+      "Survival percentage of Male :  18.890814558058924\n"
+     ]
+    },
+    {
+     "data": {
+      "image/png": "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R+EGAADAap0ONzNmzAj+PHPmzN6oBQAA4Lh163tuzjjjDN166616//33e6SIkpISJSUlKTIyUhkZGaqqqurUuK1bt8pms2n+/Pk9UgcAAOj/uhVuli1bpm3btunMM8/U1KlTtWnTJnk8nm4VUF5eLqfTqaKiItXU1GjSpEnKzs5WfX39Mcd99NFHuu6663T++ed367gAAMBM3Qo31157rV555RW98847mjNnjkpKSpSYmKjZs2frwQcf7NK+Nm7cqKVLlyo/P1/JyckqLS1VVFSUysrKjjqmra1NP/vZz3Tbbbdp7Nix3TkFAABgqON6/MK4ceN022236b333tMLL7yghoYG5efnd3p8a2urqqurlZWV9V1BYWHKyspSZWXlUcetXbtWo0aN0uLFi3/wGC0tLfL5fO02AABgrm59id/3VVVVacuWLSovL5fP59OCBQs6PbaxsVFtbW1yOBzt2h0Oh959990Ox7z44ou6//779dprr3XqGC6Xi4d5AgBwAunWzM17772noqIijRs3Tueee67eeecdbdiwQV6vV1u3bu3pGoMOHDigRYsWafPmzYqLi+vUmIKCAjU1NQW3urq6XqsPAABYr1szN98uJF6+fLmuuOKKI2ZeOisuLk7h4eHyer3t2r1er+Lj44/ov3fvXn300UeaN29esM3v90uSBgwYoD179ui0005rN8Zut8tut3erPgAA0P90Ody0tbXp97//vS677DINGzbsuA4eERGh1NRUud3u4O3cfr9fbrdbK1asOKL/mWeeqd27d7dru/nmm3XgwAFt2rRJiYmJx1UPAADo/7ocbsLDw7Vy5UplZWUdd7iRJKfTqby8PKWlpSk9PV3FxcVqbm4OLkzOzc1VQkKCXC6XIiMjNWHChHbjhw4dKklHtAMAgBNTty5LTZgwQR9++KFOPfXU4y4gJydHDQ0NKiwslMfjUUpKiioqKoKXumpraxUWdlw3dQEAgBOILRAIBLo6qKKiQgUFBVq3bp1SU1M1ePDgdu+H8lPBfT6fYmNj1dTUFNJ1AghdtWsnWl0CEHJOKdz9w52OQ1f+fndr5mbOnDmSpJ/85CftHqDJU8EBAIDVuhVunnvuuZ6uAwAAoEd0K9x8/wnhAAAAoaRb4eYvf/nLMd+fPn16t4oBAAA4Xt0KNzNnzjyi7ftrb1hzAwAArNKte6y/+OKL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wsCBA9u9ttls7dpsNpukv62d2bp1q6677jrdddddyszM1JAhQ3THHXfo5Zdf7nDfBw8elCRt27ZNCQkJ7d7jmTVAz+vKZ+7vP+cd/V/w/UtO8+bN05gxY7R582addNJJ8vv9mjBhglpbW49ay7x587Rhw4Yj3hs9enTXTgwhg3AD47z00kuaNm2ali1bFmw71oLC5ORk2e121dbWasaMGX1RInBC663P3GeffaY9e/Zo8+bNOv/88yVJL7744jHHTJkyRY899piSkpI0YAB/Ek3BvySMc8YZZ+jBBx/U008/rVNPPVUPPfSQXnnlFZ166qkd9h8yZIiuu+46XXvttfL7/TrvvPPU1NSkl156STExMcrLy+vjMwDM1lufuWHDhmnEiBG69957NXr0aNXW1mr16tXHHLN8+XJt3rxZCxcu1A033KDhw4frgw8+0NatW3XfffcpPDy8W7XAWoQbGOcXv/iFXn31VeXk5Mhms2nhwoVatmxZ8Fbxjqxbt04jR46Uy+XShx9+qKFDh2rKlClas2ZNH1YOnDh64zMXFhamrVu36le/+pUmTJig8ePH67e//a1mzpx51DEnnXSSXnrpJd14442aPXu2WlpaNGbMGF100UUKC+OG4v7KFggEAlYXAQAA0FOIpQAAwCiEGwAAYBTCDQAAMArhBgAAGIVwAwAAjEK4AQAARiHcAAAAoxBuAACAUQg3AADAKIQbAP1CQ0ODrrnmGp1yyimy2+2Kj49Xdna2XnrpJatLAxBieLYUgH7h0ksvVWtrqx544AGNHTtWXq9Xbrdbn332mdWlAQgxzNwACHlffvmlXnjhBW3YsEH/8A//oDFjxig9PV0FBQX6yU9+EuyzZMkSjRw5UjExMbrgggv0+uuvS/rbrE98fLxuv/324D537typiIgIud1uS84JQO8h3AAIedHR0YqOjtYTTzyhlpaWDvssWLBA9fX1euqpp1RdXa0pU6bowgsv1Oeff66RI0eqrKxMt956q3bt2qUDBw5o0aJFWrFihS688MI+PhsAvY2nggPoFx577DEtXbpUX331laZMmaIZM2boiiuu0Nlnn60XX3xRc+fOVX19vex2e3DM6aefrhtuuEFXX321JGn58uV69tlnlZaWpt27d+uVV15p1x+AGQg3APqNw4cP64UXXtD//d//6amnnlJVVZXuu+8+NTc361e/+pUGDRrUrv9XX32l6667Ths2bAi+njBhgurq6lRdXa2JEydacRoAehnhBkC/tWTJEj3zzDNatmyZ7r77bu3YseOIPkOHDlVcXJwk6c0339TUqVP19ddf6z//8z81b968Pq4YQF/gbikA/VZycrKeeOIJTZkyRR6PRwMGDFBSUlKHfVtbW3XVVVcpJydH48eP15IlS7R7926NGjWqb4sG0OuYuQEQ8j777DMtWLBA//iP/6izzz5bQ4YM0a5du7Ry5UrNnTtX9913n6ZPn64DBw7oN7/5jcaNG6d9+/Zp27ZtuuSSS5SWlqbrr79ejz76qF5//XVFR0drxowZio2N1Z///GerTw9ADyPcAAh5LS0tuvXWW7V9+3bt3btXX3/9tRITE7VgwQKtWbNGgwYN0oEDB3TTTTfpscceC976PX36dLlcLu3du1ezZs3Sc889p/POO0+S9NFHH2nSpElav369rrnmGovPEEBPItwAAACj8D03AADAKIQbAABgFMINAAAwCuEGAAAYhXADAACMQrgBAABGIdwAAACjEG4AAIBRCDcAAMAohBsAAGAUwg0AADDK/wMqsqkYuVUB7gAAAABJRU5ErkJggg==",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "sns.barplot(x=\"Sex\",y=\"Survived\", data= train)\n",
+    "\n",
+    "#Survival percentage \n",
+    "\n",
+    "print(\"Survival percentage of Female : \", train[\"Survived\"][train[\"Sex\"] ==\"female\"].value_counts(normalize = True)[1]*100)\n",
+    "print(\"Survival percentage of Male : \", train[\"Survived\"][train[\"Sex\"] ==\"male\"].value_counts(normalize = True)[1]*100)\n",
+    "\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "e3a06460",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.517593Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.517184Z",
+     "iopub.status.idle": "2024-06-07T13:29:38.899164Z",
+     "shell.execute_reply": "2024-06-07T13:29:38.898095Z"
+    },
+    "papermill": {
+     "duration": 0.392661,
+     "end_time": "2024-06-07T13:29:38.901497",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.508836",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Survival percentage of First class passanger  :  62.96296296296296\n",
+      "Survival percentage of Second class passanger :  47.28260869565217\n",
+      "Survival percentage of Third class passanger :  24.236252545824847\n"
+     ]
+    },
+    {
+     "data": {
+      "image/png": "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5kyNGjVKR44c0erVq1VdXa0NGzZYPVqfwFvB0WXV1dW69NJLj9tfWFioJ554oucHQp9ns9k63P/444/rhhtu6NlhAElz586Vx+PRvn37lJSUpPHjx+uuu+7S9OnTrR6tTyBuAACAUfiEYgAAYBTiBgAAGIW4AQAARiFuAACAUYgbAABgFOIGAAAYhbgBAABGIW4AAIBRiBsAvda0adN06623Wj0GgChD3ACw1A033CCbzSabzRb8FuXFixfr2LFjVo8GoJfiizMBWO7yyy/X448/Lr/fr/Xr12vBggXq37+/iouLrR4NQC/EmRsAlrPb7UpJSdHo0aN18803Ky8vT6+++qok6Q9/+IOmTZumgQMHaujQocrPz9ehQ4c6fJynn35a2dnZSkhIUEpKin7yk59o//79wfsPHTqk66+/XsOHD9eAAQN09tln6/HHH5cktba2qqioSCNHjlR8fLxGjx4tt9t96p88gIjjzA2AqDNgwAD95S9/UX19vS677DL97Gc/08qVK9WvXz+98cYbamtr6/C4r776SkuWLNHYsWO1f/9+uVwu3XDDDVq/fr0k6Ze//KXee+89/e53v1NycrI+/vhjffHFF5KkBx98UK+++qqef/55jRo1Srt379bu3bt77DkDiBziBkDUaG9vl8fj0YYNG3TLLbfo17/+tbKzs/Uf//EfwTXf+973Tnj8z372s+CfzzzzTD344IOaNGmSjh49qsGDB6uhoUEXXHCBsrOzJUnp6enB9Q0NDTr77LP193//97LZbBo9enTknyCAHsHLUgAst27dOg0ePFjx8fGaOXOmCgoKdM899wTP3HRWXV2drrzySo0aNUoJCQmaOnWqpK/DRZJuvvlmrVmzRpmZmbrzzju1ZcuW4LE33HCD6uvrNXbsWP3Lv/yLNm7cGNknCaDHEDcALHfppZeqvr5eH330kb744gs9+eSTGjRokAYMGNDpx2hpaVF+fr4SExP17LPP6u2339ZLL70k6evraSRp5syZ2rVrl2677Tbt3btXl112mW6//XZJ0sSJE/XJJ59oyZIl+uKLL/SjH/1I11xzTeSfLIBTjrgBYLlBgwZpzJgxGjVqlPr1+/bV8vHjx8vj8XTqMT744AP95S9/0dKlS3XJJZdo3LhxIRcTf2P48OEqLCzUM888o9LSUj366KPB+xITE1VQUKBVq1apsrJS//Vf/6WDBw92/wkC6FFccwMgahUXF+v888/X/PnzddNNNykuLk5vvPGGrr32WiUnJ4esHTVqlOLi4vTQQw/ppptu0o4dO7RkyZKQNSUlJcrKytL3vvc9+f1+rVu3Tueee64kacWKFRo5cqQuuOACxcTEaO3atUpJSdGQIUN66ukCiBDO3ACIWuecc442btyoP/3pT5o8ebJyc3P1yiuvhJzd+cbw4cP1xBNPaO3atcrIyNDSpUu1bNmykDVxcXEqLi7W+PHjNWXKFMXGxmrNmjWSpISEhOAFzJMmTdKnn36q9evXKyaG/5kEehtbe3t7u9VDAAAARAr/lwQAABiFuAEAAEYhbgAAgFGIGwAAYBTiBgAAGIW4AQAARiFuAACAUYgbAABgFOIGAAAYhbgBAABGIW4AAIBR/h+znoi5BJUcZQAAAABJRU5ErkJggg==",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "sns.barplot(x=\"Pclass\",y=\"Survived\", data= train)\n",
+    "\n",
+    "#Survival percentage \n",
+    "\n",
+    "print(\"Survival percentage of First class passanger  : \", train[\"Survived\"][train[\"Pclass\"] == 1].value_counts(normalize = True)[1]*100)\n",
+    "print(\"Survival percentage of Second class passanger : \", train[\"Survived\"][train[\"Pclass\"] == 2].value_counts(normalize = True)[1]*100)\n",
+    "print(\"Survival percentage of Third class passanger : \", train[\"Survived\"][train[\"Pclass\"] == 3].value_counts(normalize = True)[1]*100)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "7b510c81",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:38.917902Z",
+     "iopub.status.busy": "2024-06-07T13:29:38.917481Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.295261Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.294224Z"
+    },
+    "papermill": {
+     "duration": 0.38941,
+     "end_time": "2024-06-07T13:29:39.298299",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:38.908889",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/opt/conda/lib/python3.10/site-packages/seaborn/categorical.py:641: FutureWarning: The default of observed=False is deprecated and will be changed to True in a future version of pandas. Pass observed=False to retain current behavior or observed=True to adopt the future default and silence this warning.\n",
+      "  grouped_vals = vals.groupby(grouper)\n"
+     ]
+    },
+    {
+     "data": {
+      "image/png": "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HZWamuoYV1JSotTUVHXt2vWC877zzjsqLCzUAw88UN1lAgCAy4jLr5aKj49XTEyMOnXqpIiICM2aNUsnTpxwXD01ePBgBQcHKzEx0Wm+pKQkDRgwQA0bNnRF2QAAoJZyebiJjo5WXl6eJk6cqJycHIWHh2vlypWOTsbZ2dlyc3M+wLR9+3atWbNGn332mStKBgAAtZjLw40kxcXFKS4ursxpaWlppca1adNGxphqrgoAAFyOLuurpQAAAH6PcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACyFcAMAACzF5eFmzpw5Cg0NlZeXl7p06aKMjIwLtj969KiGDx+uJk2ayG63q3Xr1vr4449rqFoAAFDb1XHlylNSUhQfH6958+apS5cumjVrlqKiorR9+3Y1bty4VPuioiL17t1bjRs31rvvvqvg4GD98MMPql+/fs0XDwAAaiWXhpuZM2dq6NChio2NlSTNmzdPK1asUHJyssaOHVuqfXJysg4fPqx169bJw8NDkhQaGlqTJQMAgFrOZaelioqKtGHDBkVGRv5WjJubIiMjlZ6eXuY8y5cvV9euXTV8+HAFBgbq2muv1bPPPqvi4uLzrqewsFAFBQVOAwAAsC6XhZtDhw6puLhYgYGBTuMDAwOVk5NT5jzff/+93n33XRUXF+vjjz/WhAkTNGPGDE2ZMuW860lMTJS/v79jCAkJqdLtAAAAtYvLOxRXRElJiRo3bqx//etf6tixo6KjozV+/HjNmzfvvPOMGzdO+fn5jmHfvn01WDEAAKhpLutzExAQIHd3d+Xm5jqNz83NVVBQUJnzNGnSRB4eHnJ3d3eMa9eunXJyclRUVCRPT89S89jtdtnt9qotHgAA1FouO3Lj6empjh07KjU11TGupKREqamp6tq1a5nzdO/eXbt27VJJSYlj3I4dO9SkSZMygw0AALjyuPS0VHx8vF577TUtXLhQWVlZevTRR3XixAnH1VODBw/WuHHj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AACwFMINAACwFMINAACwFMINAACwFMINAACwFMINAACwFMINAACwlFoRbubMmaPQ0FB5eXmpS5cuysjIOG/b1157TTfddJOuuuoqXXXVVYqMjLxgewAAcGVxebhJSUlRfHy8EhIStHHjRoWFhSkqKkoHDx4ss31aWpoGDhyozz//XOnp6QoJCdFtt92mn376qYYrBwAAtZHLw83MmTM1dOhQxcbGqn379po3b568vb2VnJxcZvtFixZp2LBhCg8PV9u2bfX666+rpKREqampNVw5AACojVwaboqKirRhwwZFRkY6xrm5uSkyMlLp6enlWsbJkyd1+vRpNWjQoMzphYWFKigocBoAAIB1uTTcHDp0SMXFxQoMDHQaHxgYqJycnHItY8yYMWratKlTQDpXYmKi/P39HUNISMgl1w0AAGovl5+WuhTTpk3TkiVL9P7778vLy6vMNuPGjVN+fr5j2LdvXw1XCQAAapJL7woeEBAgd3d35ebmOo3Pzc1VUFDQBeedPn26pk2bpv/3//6frr/++vO2s9vtstvtVVIvAACo/Vx65MbT01MdO3Z06gx8tnNw165dzzvf888/r2eeeUYrV65Up06daqJUAABwmXDpkRtJio+PV0xMjDp16qSIiAjNmjVLJ06cUGxsrCRp8ODBCg4OVmJioiTpueee08SJE7V48WKFhoY6+ub4+vrK19fXZdsBAABqB5eHm+joaOXl5WnixInKyclReHi4Vq5c6ehknJ2dLTe33w4wzZ07V0VFRbr77rudlpOQkKCnn366JksHAAC1kMvDjSTFxcUpLi6uzGlpaWlOz/fu3Vv9BQEAgMvWZX21FAAAwO8RbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKUQbgAAgKXUintLAVZj6poyHwMAqh/hBqgGRT2KXF0CAFyxOC0FAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAshXADAAAsxeXhZs6cOQoNDZWXl5e6dOmijIyM87b99ttvdddddyk0NFQ2m02zZs2quUIBAMBlwaXhJiUlRfHx8UpI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JSVFEydO1Pbt2x3jfH19a7SemlRUVCRPT89S4++66y4VFRVp4cKFuuaaa5Sbm6vU1FT9/PPPLqiy/Gw2m+bPn68WLVpo7969jvF79uzR6NGjNXfuXF199dWuK7AckpOTNXr0aCUnJ2vUqFGuLsdJUlKSHnvsMSUlJWn//v3l+mn/y01N7PsNGjS4pPmLi4tls9mcfvrlUlyRR27K48EHH9SAAQM0ffp0NWnSRA0bNtTw4cN1+gJ32H399ddVv359x3/0vXr10ogRIzR69Gg1aNBAQUFBpf5jzs7OVv/+/eXr6ys/Pz/de++9jttL5Ofny93dXevXr5f06683N2jQQDfeeKNj/rfeekshISGSfjs0u2zZMt18883y9vZWWFjYee+wXlFnE39QUJDCw8M1duxY7du3T3l5eZKkMWPGqHXr1vL29tY111yjCRMmlPl6vfrqqwoJCZG3t7fuvfdex53av/jiC3l4eCgnJ8ep/eOPP66bbrqpSrahooYNGyabzaaMjAzdddddat26tf74xz8qPj5eX375paPdoUOHdOedd8rb21utWrXS8uXLHdPK81/ktGnTFBgYqHr16mnIkCE6derUJdV99n0KCgqSv7+/bDab07glS5aoXbt28vLyUtu2bfXKK684zb9v3z7de++9ql+/vho0aKD+/fs7/WEtz+fjzTffVKdOnVSvXj0FBQXp/vvv18GDB53Ws3z5crVq1UpeXl66+eabtXDhwlKv1Zo1a3TTTTepbt26CgkJ0YgRI3TixG93fA4NDdUzzzyjwYMHy8/PTw8//HCp1+Po0aNavXq1nnvuOd18881q3ry5IiIiNG7cON1xxx0KDQ2VJN15552y2WyO52e381yPP/64evXq5Xh+4sQJDR48WL6+vmrSpIlmzJhRav2FhYV68sknFRwcLB8fH3Xp0kVpaWmO6WePGn/66adq166dfH191adPH0dITUpK0unTp5WZmek4+nbXXXfptttuU7NmzRQRESG73a4mTZpo7NixOnPOnd/LOi0SHh7u9F1ks9n0+uuvn3cfLu97VZZVq1bpl19+0eTJk1VQUKB169Y5TS/P61fW0Y769etrwYIFpdru3btXN998syTpqquuks1m04MPPlhmbcePH1dKSooeffRR9evXr9TyLva5LOsswIABA867vvPtZ9XpYvv+2TYPPfSQGjVqJD8/P91yyy3KzMx0LOPs6bg333xToaGh8vf313333adjx4452vz+tThy5IgGDx6sq666St7e3vrTn/6knTt3Oqaf3eeXL1+u9u3by263V+k/yoSbC/j888+1e/duff7551q4cKEWLFhQ5odJkp5//nmNHTtWn332mW699VbH+IULF8rHx0dfffWVnn/+eU2ePFn/+c9/JP0aVvr376/Dhw9r1apV+s9//qPvv/9e0dHRkn69h0Z4eLjjS3Dr1q2y2WzatGmTjh8/LunXL46ePXs61TJ+/Hg9+eST2rx5s1q3bq2BAwc6fdlVhePHj+utt95Sy5Yt1bBhQ0lSvXr1tGDBAn333XeaPXu2XnvtNb344otO8+3atUtLly7Vv//9b61cuVKbNm3SsGHDJEk9evTQNddcozfffNPR/vTp01q0aJH+93//t0rrL4/Dhw9r5cqVGj58uHx8fEpNP/cU5qRJk3Tvvfdqy5Yt6tu3rwYNGqTDhw+Xaz1Lly7V008/rWeffVbr169XkyZNSoWNqrRo0SJNnDhRU6dOVVZWlp599llNmDBBCxculPTrax4VFaV69epp9erVWrt2reOPbVFRkWM5F/t8nD59Ws8884wyMzP1wQcfaO/evU5f+nv27NHdd9+tAQMGKDMzU4888ojGjx/vVOvu3bvVp08f3XXXXdqyZYtSUlK0Zs0axcXFObWbPn26wsLCtGnTJk2YMKHUNvv6+srX11cffPCBCgsLS03/+uuvJUnz58/XgQMHHM/LY9SoUVq1apU+/PBDffbZZ0pLS9PGjRud2sTFxSk9PV1LlizRli1bdM8996hPnz5OX/YnT57U9OnT9eabb+qLL75Qdna2nnzySUnSk08+qXvvvVeNGzdWt27dNGXKFP3444968cUX1bdvX3Xu3FmZmZmaO3eukpKSNGXKlHLXf9aF9uHyvFfnk5SUpIEDB8rDw0MDBw5UUlJShV+/iggJCdF7770nSdq+fbsOHDig2bNnl9l26dKlatu2rdq0aaMHHnhAycnJOvvTb9XxubyU/ayyLrbvS9I999yjgwcP6pNPPtGGDRvUoUMH3XrrrU7fYbt379YHH3ygjz76SB999JFWrVqladOmnXe9Dz74oNavX6/ly5crPT1dxhj17dvX6R+gkydP6rnnntPrr7+ub7/9Vo0bN666Db/ofcMt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q2P/qFu3rlMwr0pXZLhp06aNPvvss1LjN27cqNatW1doWREREYqLi1OfPn1Up04dxzny8mjXrp327dunffv2OY7efPfddzp69Kjat28v6ded6/rrr9fLL78sDw8PtW3bVo0bN1Z0dLQ++uijUv1tatLZnu2//PKL1q1bp+bNmzudhz97ROdc2dnZTlckfPnll3Jzc3P6T+2hhx7SwIEDdfXVV6tFixbq3r179W9MGRo0aKCoqCjNmTNHI0aMKPUH9OjRo1Xy0wHt2rXTV199pcGDBzvGndtZuSoFBgaqadOm+v777zVo0KAy23To0EEpKSlq3Lix/Pz8KrWebdu26eeff9a0adMc+/bZjvFntWnTRh9//LHTuN/3QejQoYO+++47p1Bdldq3b+/oqOrh4aHi4mKn6Y0aNdI333zjNG7z5s2OL/oWLVrIw8NDX331lSNsHTlyRDt27HB8Nm+44QYVFxfr4MGDl9Qx3tPTs1R97dq103vvvSdjjOOPxNq1a1WvXj3HFVSNGjVyunquoKDA6ahXeZTnvfq9rVu3av369UpLS3O6kubw4cPq1auXtm3bVq7Xr6xt2Llzp06ePHnedZ+9Wu73r9dZZ86c0RtvvKEZM2botttuc5o2YMAAvf322+X6XP6+ruLiYn3zzTeODs1lKWs/c4Wz+36HDh2Uk5OjOnXqVFkH53bt2unMmTP66quv1K1bN0nSzz//rO3btzv+tlW3K/K01KOPPqodO3ZoxIgR2rJli7Zv366ZM2fq7bff1hNPPFHh5XXr1k0ff/yxJk2aVKEfa4qMjNR1112nQYMGaePGjcrIyNDgwYPVs2dPp8PsvXr10qJFixwf9gYNGqhdu3ZKSUmp0XBTWFionJwc5eTkKCsrS4899piOHz+u22+/Xa1atVJ2draWLFmi3bt366WXXtL7779fahleXl6KiYlRZmamVq9erREjRujee+91ulQ6KipKfn5+mjJlimJjY2ts+8oyZ84cFRcXKyIiQu+995527typrKwsvfTSS1V2iHrkyJFKTk7W/PnztWPHDiUkJOjbb7+tkmWXZdKkSUpMTNRLL72kHTt2aOvWrZo/f75mzpwpSRo0aJACAgLUv39/rV69Wnv27FFaWppGjBhR7lMdzZo1k6enp/75z3/q+++/1/Lly0v9BsYjjzyibdu2acyYMdqxY4eW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",
+      "text/plain": [
+       "<Figure size 640x480 with 1 Axes>"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    }
+   ],
+   "source": [
+    "train.Age = train.Age.fillna(-0.5)\n",
+    "test.Age = test.Age.fillna(-0.5)\n",
+    "\n",
+    "bins = [-1,0,5,12,18,24,35,60,np.inf]\n",
+    "\n",
+    "labels = [\"Unknown\",\"Baby\",\"Child\",\"Teenager\",\"Student\",\"Young Adult\",\"Adult\", \"Senior\"]\n",
+    "\n",
+    "train[\"AgeGroup\"] = pd.cut(train[\"Age\"],bins,labels = labels)\n",
+    "test[\"AgeGroup\"] = pd.cut(test[\"Age\"],bins,labels = labels)\n",
+    "\n",
+    "sns.barplot(x = \"AgeGroup\", y = \"Survived\", data = train)\n",
+    "plt.show()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "3415fdea",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.316437Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.315423Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.327239Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.326182Z"
+    },
+    "papermill": {
+     "duration": 0.023453,
+     "end_time": "2024-06-07T13:29:39.329699",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.306246",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Number of people embarking in Southampton (S) : 644\n",
+      "Number of people embarking in Cherbourg (C) : 168\n",
+      "Number of people embarking in Queenstown (Q) : 77\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"Number of people embarking in Southampton (S) :\",end = \" \" )\n",
+    "southampton = train[train[\"Embarked\"] == \"S\"].shape[0]\n",
+    "print(southampton)\n",
+    "\n",
+    "print(\"Number of people embarking in Cherbourg (C) :\",end = \" \" )\n",
+    "Cherbourg = train[train[\"Embarked\"] == \"C\"].shape[0]\n",
+    "print(Cherbourg)\n",
+    "\n",
+    "print(\"Number of people embarking in Queenstown (Q) :\",end = \" \" )\n",
+    "Queenstown = train[train[\"Embarked\"] == \"Q\"].shape[0]\n",
+    "print(Queenstown)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "b4978325",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.347384Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.346597Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.357384Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.356343Z"
+    },
+    "papermill": {
+     "duration": 0.021982,
+     "end_time": "2024-06-07T13:29:39.359634",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.337652",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "PassengerId    0\n",
+       "Survived       0\n",
+       "Pclass         0\n",
+       "Name           0\n",
+       "Sex            0\n",
+       "Age            0\n",
+       "SibSp          0\n",
+       "Parch          0\n",
+       "Embarked       0\n",
+       "AgeGroup       0\n",
+       "dtype: int64"
+      ]
+     },
+     "execution_count": 10,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train = train.fillna({\"Embarked\": \"S\"})\n",
+    "train.isna().sum()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "589c5064",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.377983Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.377604Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.403696Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.402647Z"
+    },
+    "papermill": {
+     "duration": 0.03829,
+     "end_time": "2024-06-07T13:29:39.405955",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.367665",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th>Sex</th>\n",
+       "      <th>female</th>\n",
+       "      <th>male</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Title</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Capt</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Col</th>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Countess</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Don</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Dr</th>\n",
+       "      <td>1</td>\n",
+       "      <td>6</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Jonkheer</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Lady</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Major</th>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Master</th>\n",
+       "      <td>0</td>\n",
+       "      <td>40</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Miss</th>\n",
+       "      <td>182</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Mlle</th>\n",
+       "      <td>2</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Mme</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Mr</th>\n",
+       "      <td>0</td>\n",
+       "      <td>517</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Mrs</th>\n",
+       "      <td>125</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Ms</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Rev</th>\n",
+       "      <td>0</td>\n",
+       "      <td>6</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Sir</th>\n",
+       "      <td>0</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "Sex       female  male\n",
+       "Title                 \n",
+       "Capt           0     1\n",
+       "Col            0     2\n",
+       "Countess       1     0\n",
+       "Don            0     1\n",
+       "Dr             1     6\n",
+       "Jonkheer       0     1\n",
+       "Lady           1     0\n",
+       "Major          0     2\n",
+       "Master         0    40\n",
+       "Miss         182     0\n",
+       "Mlle           2     0\n",
+       "Mme            1     0\n",
+       "Mr             0   517\n",
+       "Mrs          125     0\n",
+       "Ms             1     0\n",
+       "Rev            0     6\n",
+       "Sir            0     1"
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "combine = [train,test]\n",
+    "\n",
+    "for dataset in combine :\n",
+    "    dataset[\"Title\"] = dataset.Name.str.extract(\"([A-Za-z]+)\\.\", expand = False)\n",
+    "    \n",
+    "pd.crosstab(train[\"Title\"],train[\"Sex\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "77255010",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.424281Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.423480Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.445700Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.444654Z"
+    },
+    "papermill": {
+     "duration": 0.033906,
+     "end_time": "2024-06-07T13:29:39.448029",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.414123",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>Title</th>\n",
+       "      <th>Survived</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>Master</td>\n",
+       "      <td>0.575000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>Miss</td>\n",
+       "      <td>0.702703</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>Mr</td>\n",
+       "      <td>0.156673</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>Mrs</td>\n",
+       "      <td>0.793651</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>Rare</td>\n",
+       "      <td>0.250000</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>5</th>\n",
+       "      <td>Royal</td>\n",
+       "      <td>1.000000</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "    Title  Survived\n",
+       "0  Master  0.575000\n",
+       "1    Miss  0.702703\n",
+       "2      Mr  0.156673\n",
+       "3     Mrs  0.793651\n",
+       "4    Rare  0.250000\n",
+       "5   Royal  1.000000"
+      ]
+     },
+     "execution_count": 12,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# Club the Title \n",
+    "\n",
+    "for dataset in combine :\n",
+    "    dataset[\"Title\"] = dataset[\"Title\"].replace([\"Capt\",\"Col\",\"Don\",\"Dr\",\"Jonkheer\",\"Major\",\"Rev\"],\"Rare\")\n",
+    "    dataset[\"Title\"] = dataset[\"Title\"].replace([\"Countess\",\"Lady\",\"Sir\"],\"Royal\")\n",
+    "    dataset[\"Title\"] = dataset[\"Title\"].replace(\"Mlle\",\"Miss\")  \n",
+    "    dataset[\"Title\"] = dataset[\"Title\"].replace(\"Ms\",\"Miss\")  \n",
+    "    dataset[\"Title\"] = dataset[\"Title\"].replace(\"Mme\",\"Mrs\")  \n",
+    "    \n",
+    "train[[\"Title\",\"Survived\"]].groupby([\"Title\"], as_index = False).mean()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "fdbbc579",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.466401Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.466055Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.483642Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.482640Z"
+    },
+    "papermill": {
+     "duration": 0.029341,
+     "end_time": "2024-06-07T13:29:39.485849",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.456508",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PassengerId</th>\n",
+       "      <th>Survived</th>\n",
+       "      <th>Pclass</th>\n",
+       "      <th>Name</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>SibSp</th>\n",
+       "      <th>Parch</th>\n",
+       "      <th>Embarked</th>\n",
+       "      <th>AgeGroup</th>\n",
+       "      <th>Title</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Braund, Mr. Owen Harris</td>\n",
+       "      <td>male</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Student</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Cumings, Mrs. John Bradley (Florence Briggs Th...</td>\n",
+       "      <td>female</td>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>C</td>\n",
+       "      <td>Adult</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Heikkinen, Miss. Laina</td>\n",
+       "      <td>female</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Futrelle, Mrs. Jacques Heath (Lily May Peel)</td>\n",
+       "      <td>female</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Allen, Mr. William Henry</td>\n",
+       "      <td>male</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   PassengerId  Survived  Pclass  \\\n",
+       "0            1         0       3   \n",
+       "1            2         1       1   \n",
+       "2            3         1       3   \n",
+       "3            4         1       1   \n",
+       "4            5         0       3   \n",
+       "\n",
+       "                                                Name     Sex   Age  SibSp  \\\n",
+       "0                            Braund, Mr. Owen Harris    male  22.0      1   \n",
+       "1  Cumings, Mrs. John Bradley (Florence Briggs Th...  female  38.0      1   \n",
+       "2                             Heikkinen, Miss. Laina  female  26.0      0   \n",
+       "3       Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  35.0      1   \n",
+       "4                           Allen, Mr. William Henry    male  35.0      0   \n",
+       "\n",
+       "   Parch Embarked     AgeGroup  Title  \n",
+       "0      0        S      Student      1  \n",
+       "1      0        C        Adult      3  \n",
+       "2      0        S  Young Adult      2  \n",
+       "3      0        S  Young Adult      3  \n",
+       "4      0        S  Young Adult      1  "
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "title_mapping = {'Mr':1, 'Miss': 2, 'Mrs': 3, 'Master': 4, 'Royal': 5,'Rare': 6}\n",
+    "\n",
+    "for dataset in combine : \n",
+    "    dataset['Title'] = dataset['Title'].map(title_mapping)\n",
+    "    dataset['Title'] = dataset['Title'].fillna(0)\n",
+    "    \n",
+    "train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "aa5f6719",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.504785Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.504404Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.549440Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.548384Z"
+    },
+    "papermill": {
+     "duration": 0.057815,
+     "end_time": "2024-06-07T13:29:39.552198",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.494383",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "/tmp/ipykernel_18/273588842.py:13: FutureWarning: ChainedAssignmentError: behaviour will change in pandas 3.0!\n",
+      "You are setting values through chained assignment. Currently this works in certain cases, but when using Copy-on-Write (which will become the default behaviour in pandas 3.0) this will never work to update the original DataFrame or Series, because the intermediate object on which we are setting values will behave as a copy.\n",
+      "A typical example is when you are setting values in a column of a DataFrame, like:\n",
+      "\n",
+      "df[\"col\"][row_indexer] = value\n",
+      "\n",
+      "Use `df.loc[row_indexer, \"col\"] = values` instead, to perform the assignment in a single step and ensure this keeps updating the original `df`.\n",
+      "\n",
+      "See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy\n",
+      "\n",
+      "  train['AgeGroup'][i] = age_title_map[train['Title'][i]]\n",
+      "/tmp/ipykernel_18/273588842.py:17: FutureWarning: ChainedAssignmentError: behaviour will change in pandas 3.0!\n",
+      "You are setting values through chained assignment. Currently this works in certain cases, but when using Copy-on-Write (which will become the default behaviour in pandas 3.0) this will never work to update the original DataFrame or Series, because the intermediate object on which we are setting values will behave as a copy.\n",
+      "A typical example is when you are setting values in a column of a DataFrame, like:\n",
+      "\n",
+      "df[\"col\"][row_indexer] = value\n",
+      "\n",
+      "Use `df.loc[row_indexer, \"col\"] = values` instead, to perform the assignment in a single step and ensure this keeps updating the original `df`.\n",
+      "\n",
+      "See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy\n",
+      "\n",
+      "  test['AgeGroup'][i] = age_title_map[test['Title'][i]]\n"
+     ]
+    }
+   ],
+   "source": [
+    "Mr_age = train[train[\"Title\"] == 1][\"AgeGroup\"].mode() # Young Adult \n",
+    "Miss_age = train[train[\"Title\"] == 2][\"AgeGroup\"].mode() # Student\n",
+    "Mrs_age = train[train[\"Title\"] == 3][\"AgeGroup\"].mode()  # Adult\n",
+    "Master_age = train[train[\"Title\"] == 4][\"AgeGroup\"].mode() # Baby\n",
+    "Royal_age = train[train[\"Title\"] ==  5][\"AgeGroup\"].mode()  # Adult\n",
+    "Rare_age = train[train[\"Title\"] == 6][\"AgeGroup\"].mode()    # Adult\n",
+    "\n",
+    "\n",
+    "age_title_map = {1: \"Young Adult\", 2: \"Student\", 3: \"Adult\", 4: \"Baby\", 5 : \"Adult\", 6:  \"Adult\"}\n",
+    "\n",
+    "for i in range(len(train['AgeGroup'])):\n",
+    "    if train['AgeGroup'][i] == \"Unknown\" :\n",
+    "        train['AgeGroup'][i] = age_title_map[train['Title'][i]]\n",
+    "\n",
+    "for i in range(len(test['AgeGroup'])):\n",
+    "    if test['AgeGroup'][i] == \"Unknown\" :\n",
+    "        test['AgeGroup'][i] = age_title_map[test['Title'][i]]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "13b29bb7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.571306Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.570916Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.578613Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.577530Z"
+    },
+    "papermill": {
+     "duration": 0.019867,
+     "end_time": "2024-06-07T13:29:39.580892",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.561025",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['Student', 'Adult', 'Young Adult', 'Baby', 'Teenager', 'Child', 'Senior']\n",
+       "Categories (8, object): ['Unknown' < 'Baby' < 'Child' < 'Teenager' < 'Student' < 'Young Adult' < 'Adult' < 'Senior']"
+      ]
+     },
+     "execution_count": 15,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train.AgeGroup.unique()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "d5115552",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.601486Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.600484Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.615896Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.614613Z"
+    },
+    "papermill": {
+     "duration": 0.028079,
+     "end_time": "2024-06-07T13:29:39.618244",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.590165",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PassengerId</th>\n",
+       "      <th>Survived</th>\n",
+       "      <th>Pclass</th>\n",
+       "      <th>Name</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>SibSp</th>\n",
+       "      <th>Parch</th>\n",
+       "      <th>Embarked</th>\n",
+       "      <th>AgeGroup</th>\n",
+       "      <th>Title</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Braund, Mr. Owen Harris</td>\n",
+       "      <td>male</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Student</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Cumings, Mrs. John Bradley (Florence Briggs Th...</td>\n",
+       "      <td>female</td>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>C</td>\n",
+       "      <td>Adult</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Heikkinen, Miss. Laina</td>\n",
+       "      <td>female</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Futrelle, Mrs. Jacques Heath (Lily May Peel)</td>\n",
+       "      <td>female</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Allen, Mr. William Henry</td>\n",
+       "      <td>male</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>S</td>\n",
+       "      <td>Young Adult</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   PassengerId  Survived  Pclass  \\\n",
+       "0            1         0       3   \n",
+       "1            2         1       1   \n",
+       "2            3         1       3   \n",
+       "3            4         1       1   \n",
+       "4            5         0       3   \n",
+       "\n",
+       "                                                Name     Sex   Age  SibSp  \\\n",
+       "0                            Braund, Mr. Owen Harris    male  22.0      1   \n",
+       "1  Cumings, Mrs. John Bradley (Florence Briggs Th...  female  38.0      1   \n",
+       "2                             Heikkinen, Miss. Laina  female  26.0      0   \n",
+       "3       Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  35.0      1   \n",
+       "4                           Allen, Mr. William Henry    male  35.0      0   \n",
+       "\n",
+       "   Parch Embarked     AgeGroup  Title  \n",
+       "0      0        S      Student      1  \n",
+       "1      0        C        Adult      3  \n",
+       "2      0        S  Young Adult      2  \n",
+       "3      0        S  Young Adult      3  \n",
+       "4      0        S  Young Adult      1  "
+      ]
+     },
+     "execution_count": 16,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "0ad792b1",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.638547Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.638158Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.793123Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.792009Z"
+    },
+    "papermill": {
+     "duration": 0.168253,
+     "end_time": "2024-06-07T13:29:39.795862",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.627609",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "# label encoding for categorical data\n",
+    "from sklearn.preprocessing import LabelEncoder\n",
+    "le = LabelEncoder()\n",
+    "transform = ['Sex','AgeGroup','Embarked']\n",
+    "\n",
+    "for i in  transform:\n",
+    "    train[i] = le.fit_transform(train[i])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "e0961ac6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.815877Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.815462Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.822781Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.821551Z"
+    },
+    "papermill": {
+     "duration": 0.01966,
+     "end_time": "2024-06-07T13:29:39.824839",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.805179",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "for i in  transform:\n",
+    "    test[i] = le.fit_transform(test[i])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "df49bab6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.844592Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.844207Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.859995Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.858907Z"
+    },
+    "papermill": {
+     "duration": 0.028246,
+     "end_time": "2024-06-07T13:29:39.862216",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.833970",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PassengerId</th>\n",
+       "      <th>Survived</th>\n",
+       "      <th>Pclass</th>\n",
+       "      <th>Name</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>SibSp</th>\n",
+       "      <th>Parch</th>\n",
+       "      <th>Embarked</th>\n",
+       "      <th>AgeGroup</th>\n",
+       "      <th>Title</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Braund, Mr. Owen Harris</td>\n",
+       "      <td>1</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Cumings, Mrs. John Bradley (Florence Briggs Th...</td>\n",
+       "      <td>0</td>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Heikkinen, Miss. Laina</td>\n",
+       "      <td>0</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>6</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Futrelle, Mrs. Jacques Heath (Lily May Peel)</td>\n",
+       "      <td>0</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>6</td>\n",
+       "      <td>3</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Allen, Mr. William Henry</td>\n",
+       "      <td>1</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>2</td>\n",
+       "      <td>6</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   PassengerId  Survived  Pclass  \\\n",
+       "0            1         0       3   \n",
+       "1            2         1       1   \n",
+       "2            3         1       3   \n",
+       "3            4         1       1   \n",
+       "4            5         0       3   \n",
+       "\n",
+       "                                                Name  Sex   Age  SibSp  Parch  \\\n",
+       "0                            Braund, Mr. Owen Harris    1  22.0      1      0   \n",
+       "1  Cumings, Mrs. John Bradley (Florence Briggs Th...    0  38.0      1      0   \n",
+       "2                             Heikkinen, Miss. Laina    0  26.0      0      0   \n",
+       "3       Futrelle, Mrs. Jacques Heath (Lily May Peel)    0  35.0      1      0   \n",
+       "4                           Allen, Mr. William Henry    1  35.0      0      0   \n",
+       "\n",
+       "   Embarked  AgeGroup  Title  \n",
+       "0         2         4      1  \n",
+       "1         0         0      3  \n",
+       "2         2         6      2  \n",
+       "3         2         6      3  \n",
+       "4         2         6      1  "
+      ]
+     },
+     "execution_count": 19,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    " train.head()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "d021612f",
+   "metadata": {
+    "papermill": {
+     "duration": 0.009051,
+     "end_time": "2024-06-07T13:29:39.880563",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.871512",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "# **Machine Learning Part**"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "7c6912c7",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.901139Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.900733Z",
+     "iopub.status.idle": "2024-06-07T13:29:39.908039Z",
+     "shell.execute_reply": "2024-06-07T13:29:39.907030Z"
+    },
+    "papermill": {
+     "duration": 0.020203,
+     "end_time": "2024-06-07T13:29:39.910231",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.890028",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "x_train = train.drop(['PassengerId','Name','Survived'],axis = 1)\n",
+    "y_train = train['Survived']\n",
+    "x_test = test.drop(['PassengerId','Name'],axis =1)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "60ec6d9a",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:39.930540Z",
+     "iopub.status.busy": "2024-06-07T13:29:39.930138Z",
+     "iopub.status.idle": "2024-06-07T13:29:40.142684Z",
+     "shell.execute_reply": "2024-06-07T13:29:40.141580Z"
+    },
+    "papermill": {
+     "duration": 0.225749,
+     "end_time": "2024-06-07T13:29:40.145423",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:39.919674",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from sklearn.linear_model import LogisticRegression\n",
+    "lr=LogisticRegression()\n",
+    "\n",
+    "lr.fit(x_train,y_train)\n",
+    "predict = lr.predict(x_test)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "bf14d1c0",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:40.166006Z",
+     "iopub.status.busy": "2024-06-07T13:29:40.165610Z",
+     "iopub.status.idle": "2024-06-07T13:29:40.173179Z",
+     "shell.execute_reply": "2024-06-07T13:29:40.172068Z"
+    },
+    "papermill": {
+     "duration": 0.020383,
+     "end_time": "2024-06-07T13:29:40.175315",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:40.154932",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0,\n",
+       "       1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1,\n",
+       "       1, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1,\n",
+       "       1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1,\n",
+       "       1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0,\n",
+       "       0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1,\n",
+       "       1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1,\n",
+       "       0, 0, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1,\n",
+       "       1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 1,\n",
+       "       0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0,\n",
+       "       1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1,\n",
+       "       0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1,\n",
+       "       0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0,\n",
+       "       0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,\n",
+       "       0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0,\n",
+       "       1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0,\n",
+       "       0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0,\n",
+       "       1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1,\n",
+       "       0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 0])"
+      ]
+     },
+     "execution_count": 22,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "predict"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "e53a09d6",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2024-06-07T13:29:40.196322Z",
+     "iopub.status.busy": "2024-06-07T13:29:40.195926Z",
+     "iopub.status.idle": "2024-06-07T13:29:40.205275Z",
+     "shell.execute_reply": "2024-06-07T13:29:40.204241Z"
+    },
+    "papermill": {
+     "duration": 0.023103,
+     "end_time": "2024-06-07T13:29:40.207845",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:40.184742",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "ids = test['PassengerId']\n",
+    "output = pd.DataFrame({'PassengerId':ids, 'Survived': predict})\n",
+    "\n",
+    "output.to_csv('Submission.csv',index = False )"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "47a03d88",
+   "metadata": {
+    "papermill": {
+     "duration": 0.009523,
+     "end_time": "2024-06-07T13:29:40.226957",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:40.217434",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "fec8592c",
+   "metadata": {
+    "papermill": {
+     "duration": 0.009002,
+     "end_time": "2024-06-07T13:29:40.245243",
+     "exception": false,
+     "start_time": "2024-06-07T13:29:40.236241",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kaggle": {
+   "accelerator": "none",
+   "dataSources": [
+    {
+     "databundleVersionId": 26502,
+     "sourceId": 3136,
+     "sourceType": "competition"
+    }
+   ],
+   "dockerImageVersionId": 30732,
+   "isGpuEnabled": false,
+   "isInternetEnabled": false,
+   "language": "python",
+   "sourceType": "notebook"
+  },
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.13"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 7.712378,
+   "end_time": "2024-06-07T13:29:40.875494",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2024-06-07T13:29:33.163116",
+   "version": "2.5.0"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
