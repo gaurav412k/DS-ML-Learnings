@@ -1,0 +1,6 @@
+python3 detect_gender_model_v2.py 113327C2_l1_cnv.tsv svm_model_thermo_v2 
+
+python3 {python_script} {file_path_.tsv} {model_path} 
+
+
+
